@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CS-ROBLOX FPS Mobile</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* RESET E ESTILOS GERAIS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: none;
+        }
+        
+        body {
+            overflow: hidden;
+            background: #0a0a0a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+        }
+        
+        /* CONTAINER PRINCIPAL */
+        #gameContainer {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* TELAS DE MENU */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+            transition: opacity 0.3s;
+        }
+        
+        .screen.hidden {
+            display: none;
+        }
+        
+        /* HUD DO JOGO */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        /* INFORMAÇÕES DO JOGADOR */
+        .player-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            border-left: 4px solid #4CAF50;
+            pointer-events: auto;
+        }
+        
+        .health-bar {
+            width: 100px;
+            height: 12px;
+            background: rgba(255, 0, 0, 0.3);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #00ff00);
+            transition: width 0.3s;
+        }
+        
+        /* MUNIÇÃO */
+        .ammo {
+            position: absolute;
+            bottom: 120px;
+            right: 20px;
+            text-align: right;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            pointer-events: auto;
+        }
+        
+        /* MIRA */
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 24px;
+            height: 24px;
+            pointer-events: none;
+        }
+        
+        .crosshair-dot {
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .crosshair-line {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.7);
+        }
+        
+        .crosshair-h {
+            width: 12px;
+            height: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .crosshair-v {
+            width: 2px;
+            height: 12px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        /* CONTROLES VIRTUAIS */
+        #joystickArea {
+            position: absolute;
+            bottom: 120px;
+            left: 40px;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            pointer-events: auto;
+            touch-action: none;
+        }
+        
+        #joystick {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            top: 25px;
+            left: 25px;
+            transition: transform 0.1s;
+        }
+        
+        /* BOTÕES DE AÇÃO */
+        .action-btn {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            touch-action: none;
+            user-select: none;
+            z-index: 101;
+        }
+        
+        #btnShoot {
+            right: 30px;
+            bottom: 120px;
+            background: rgba(255, 50, 50, 0.7);
+        }
+        
+        #btnAim {
+            right: 30px;
+            bottom: 210px;
+            background: rgba(50, 150, 255, 0.7);
+        }
+        
+        #btnReload {
+            right: 120px;
+            bottom: 120px;
+        }
+        
+        #btnJump {
+            right: 120px;
+            bottom: 210px;
+        }
+        
+        #btnCrouch {
+            right: 210px;
+            bottom: 165px;
+        }
+        
+        /* MENU DE COMPRAS */
+        #shopMenu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 500px;
+            background: rgba(20, 20, 35, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            display: none;
+            flex-direction: column;
+            z-index: 1000;
+            pointer-events: auto;
+            border: 2px solid #4CAF50;
+        }
+        
+        #shopMenu.active {
+            display: flex;
+        }
+        
+        .weapon-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .weapon-item {
+            background: rgba(40, 40, 60, 0.8);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        
+        .weapon-item:hover {
+            background: rgba(60, 60, 100, 0.9);
+            border-color: #4CAF50;
+        }
+        
+        /* MENSAGENS DO JOGO */
+        #gameMessage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            z-index: 999;
+            display: none;
+        }
+        
+        /* LOADING */
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            text-align: center;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* BOTÕES */
+        .btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 200px;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+        }
+        
+        /* RESPONSIVIDADE */
+        @media (max-width: 768px) {
+            .action-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 20px;
+            }
+            
+            #btnCrouch {
+                right: 180px;
+            }
+            
+            .player-info {
+                top: 10px;
+                left: 10px;
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+            
+            .ammo {
+                font-size: 20px;
+                bottom: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- TELA DE MENU PRINCIPAL -->
+    <div id="mainMenu" class="screen">
+        <h1 style="font-size: 48px; margin-bottom: 20px; color: #4CAF50; text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);">
+            <i class="fas fa-crosshairs"></i> CS-FPS MOBILE
+        </h1>
+        <p style="margin-bottom: 40px; text-align: center; color: #aaa; max-width: 300px;">
+            FPS competitivo estilo Counter-Strike para mobile
+        </p>
+        <button class="btn" onclick="startMatchmaking()">
+            <i class="fas fa-play"></i> JOGAR
+        </button>
+        <button class="btn btn-secondary" onclick="showSettings()">
+            <i class="fas fa-cog"></i> CONFIGURAÇÕES
+        </button>
+        <button class="btn" onclick="showShop()">
+            <i class="fas fa-shopping-cart"></i> LOJA
+        </button>
+        <div style="margin-top: 40px; color: #666; font-size: 14px;">
+            <p>Jogadores online: <span id="onlineCount">0</span></p>
+        </div>
+    </div>
+    
+    <!-- TELA DE CARREGAMENTO -->
+    <div id="loadingScreen" class="screen" style="display: none;">
+        <div class="spinner"></div>
+        <p id="loadingText">Conectando ao servidor...</p>
+    </div>
+    
+    <!-- CONTAINER DO JOGO -->
+    <div id="gameContainer"></div>
+    
+    <!-- HUD DO JOGO -->
+    <div id="hud" style="display: none;">
+        <!-- Informações do jogador -->
+        <div class="player-info">
+            <div>SAÚDE: <span id="healthValue">100</span></div>
+            <div class="health-bar">
+                <div id="healthFill" class="health-fill" style="width: 100%"></div>
+            </div>
+            <div>DINHEIRO: $<span id="moneyValue">800</span></div>
+            <div>ARMA: <span id="weaponName">Faca</span></div>
+        </div>
+        
+        <!-- Munição -->
+        <div class="ammo">
+            <div id="ammoCount">-/-</div>
+            <div style="font-size: 14px; opacity: 0.8;" id="weaponMode">Primária</div>
+        </div>
+        
+        <!-- Mira -->
+        <div class="crosshair">
+            <div class="crosshair-dot"></div>
+            <div class="crosshair-line crosshair-h"></div>
+            <div class="crosshair-line crosshair-v"></div>
+        </div>
+        
+        <!-- Controles -->
+        <div id="joystickArea">
+            <div id="joystick"></div>
+        </div>
+        
+        <!-- Botões de ação -->
+        <div class="action-btn" id="btnShoot">
+            <i class="fas fa-crosshairs"></i>
+        </div>
+        <div class="action-btn" id="btnAim">
+            <i class="fas fa-eye"></i>
+        </div>
+        <div class="action-btn" id="btnReload">
+            <i class="fas fa-redo"></i>
+        </div>
+        <div class="action-btn" id="btnJump">
+            <i class="fas fa-arrow-up"></i>
+        </div>
+        <div class="action-btn" id="btnCrouch">
+            <i class="fas fa-arrow-down"></i>
+        </div>
+        
+        <!-- Tempo da rodada -->
+        <div id="roundTimer" style="position: absolute; top: 20px; right: 20px; font-size: 24px; font-weight: bold;">
+            01:45
+        </div>
+        
+        <!-- Placar -->
+        <div id="scoreboard" style="position: absolute; top: 60px; right: 20px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; font-size: 14px;">
+            <div>T: <span id="scoreT">0</span> | CT: <span id="scoreCT">0</span></div>
+            <div>Rodada: <span id="roundNumber">1</span>/24</div>
+        </div>
+    </div>
+    
+    <!-- MENU DE COMPRAS -->
+    <div id="shopMenu">
+        <h2 style="text-align: center; margin-bottom: 15px; color: #4CAF50;">
+            <i class="fas fa-shopping-cart"></i> LOJA
+        </h2>
+        <div style="text-align: center; margin-bottom: 15px;">
+            Dinheiro: $<span id="shopMoney">800</span>
+        </div>
+        <div class="weapon-grid" id="weaponGrid">
+            <!-- As armas serão adicionadas aqui via JavaScript -->
+        </div>
+        <button class="btn" onclick="closeShop()" style="margin-top: 20px;">
+            FECHAR (B)
+        </button>
+    </div>
+    
+    <!-- MENSAGEM DO JOGO -->
+    <div id="gameMessage"></div>
+    
+    <!-- SCRIPTS PRINCIPAIS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    
+    <script>
+        // ==============================
+        // CONFIGURAÇÕES GLOBAIS
+        // ==============================
+        const CONFIG = {
+            SERVER_URL: 'https://seu-jogo-cs.onrender.com', // MUDAR PARA SEU SERVIDOR
+            GRAVITY: 0.02,
+            PLAYER_HEIGHT: 1.7,
+            WALK_SPEED: 0.1, // legacy per-frame value; we'll scale per delta (kept for compatibility)
+            RUN_SPEED: 0.15,
+            MOUSE_SENSITIVITY: 0.002,
+            MAX_PIXEL_RATIO: 1.5 // cap to reduce heavy GPU load on mobile
+        };
+        
+        // ==============================
+        // VARIÁVEIS GLOBAIS
+        // ==============================
+        let scene, camera, renderer;
+        let gameActive = false;
+        let localPlayer = null;
+        let socket = null;
+        let keys = {};
+        let touchControls = {
+            joystick: { active: false, x: 0, y: 0, startX: 0, startY: 0 },
+            look: { active: false, lastX: 0, lastY: 0 }
+        };
+        let currentWeapon = null;
+        let playerMoney = 800;
+        let playerHealth = 100;
+        let currentRound = 1;
+        let roundTime = 115;
+        let roundTimer = null;
+        let clock = null; // three clock for delta
+        // ==============================
+        // DADOS DAS ARMAS (CS STYLE)
+        // ==============================
+        const WEAPONS = {
+            'ak47': {
+                name: 'AK-47',
+                damage: 36,
+                fireRate: 100,
+                magazine: 30,
+                reserve: 90,
+                reloadTime: 2500,
+                price: 2700,
+                type: 'rifle',
+                icon: '🔫'
+            },
+            'm4a4': {
+                name: 'M4A4',
+                damage: 33,
+                fireRate: 90,
+                magazine: 30,
+                reserve: 90,
+                reloadTime: 2300,
+                price: 3100,
+                type: 'rifle',
+                icon: '🔫'
+            },
+            'awp': {
+                name: 'AWP',
+                damage: 115,
+                fireRate: 1500,
+                magazine: 10,
+                reserve: 30,
+                reloadTime: 3500,
+                price: 4750,
+                type: 'sniper',
+                icon: '🎯'
+            },
+            'deagle': {
+                name: 'Desert Eagle',
+                damage: 63,
+                fireRate: 500,
+                magazine: 7,
+                reserve: 35,
+                reloadTime: 2000,
+                price: 700,
+                type: 'pistol',
+                icon: '🔫'
+            },
+            'knife': {
+                name: 'Faca',
+                damage: 40,
+                fireRate: 500,
+                magazine: 1,
+                reserve: 0,
+                reloadTime: 0,
+                price: 0,
+                type: 'melee',
+                icon: '🔪'
+            }
+        };
+        
+        // ==============================
+        // INICIALIZAÇÃO DO JOGO
+        // ==============================
+        function initGame() {
+            showLoading('Inicializando jogo...');
+            
+            // Criar cena
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x000000, 10, 100);
+            
+            // Criar câmera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1.7, 0);
+            
+            // Criar renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            // cap pixel ratio (mobile performance)
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, CONFIG.MAX_PIXEL_RATIO));
+            renderer.shadowMap.enabled = true;
+            document.getElementById('gameContainer').appendChild(renderer.domElement);
+            
+            // initialize clock for frame independence
+            clock = new THREE.Clock();
+            
+            // Configurar iluminação
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(0, 10, 0);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+            
+            // Criar mapa simples (para exemplo)
+            createSimpleMap();
+            
+            // Configurar controles
+            setupControls();
+            
+            // Conectar ao servidor
+            connectToServer();
+            
+            // Iniciar loop do jogo
+            gameLoop();
+            
+            hideLoading();
+        }
+        
+        // ==============================
+        // MAPA SIMPLES
+        // ==============================
+        function createSimpleMap() {
+            // Chão
+            const floorGeometry = new THREE.PlaneGeometry(50, 50);
+            const floorMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x808080,
+                side: THREE.DoubleSide
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+            
+            // Paredes
+            const wallMaterial = new THREE.MeshPhongMaterial({ color: 0x606060 });
+            
+            // Parede norte
+            const northWall = new THREE.Mesh(
+                new THREE.BoxGeometry(50, 5, 1),
+                wallMaterial
+            );
+            northWall.position.set(0, 2.5, -25);
+            northWall.castShadow = true;
+            northWall.receiveShadow = true;
+            scene.add(northWall);
+            
+            // Parede sul
+            const southWall = new THREE.Mesh(
+                new THREE.BoxGeometry(50, 5, 1),
+                wallMaterial
+            );
+            southWall.position.set(0, 2.5, 25);
+            southWall.castShadow = true;
+            southWall.receiveShadow = true;
+            scene.add(southWall);
+            
+            // Parede leste
+            const eastWall = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 5, 50),
+                wallMaterial
+            );
+            eastWall.position.set(25, 2.5, 0);
+            eastWall.castShadow = true;
+            eastWall.receiveShadow = true;
+            scene.add(eastWall);
+            
+            // Parede oeste
+            const westWall = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 5, 50),
+                wallMaterial
+            );
+            westWall.position.set(-25, 2.5, 0);
+            westWall.castShadow = true;
+            westWall.receiveShadow = true;
+            scene.add(westWall);
+            
+            // Caixas (cobertura)
+            const boxGeometry = new THREE.BoxGeometry(3, 3, 3);
+            const boxMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
+            
+            for(let i = 0; i < 5; i++) {
+                const box = new THREE.Mesh(boxGeometry, boxMaterial);
+                box.position.set(
+                    Math.random() * 40 - 20,
+                    1.5,
+                    Math.random() * 40 - 20
+                );
+                box.castShadow = true;
+                box.receiveShadow = true;
+                scene.add(box);
+            }
+        }
+        
+        // ==============================
+        // CONTROLES TOUCH/MOBILE
+        // ==============================
+        function setupControls() {
+            // Eventos de toque para joystick
+            const joystickArea = document.getElementById('joystickArea');
+            const joystick = document.getElementById('joystick');
+            
+            joystickArea.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const rect = joystickArea.getBoundingClientRect();
+                
+                touchControls.joystick.active = true;
+                touchControls.joystick.startX = rect.left + rect.width / 2;
+                touchControls.joystick.startY = rect.top + rect.height / 2;
+                touchControls.joystick.x = 0;
+                touchControls.joystick.y = 0;
+                
+                updateJoystick(touch.clientX, touch.clientY);
+            }, { passive: false });
+            
+            joystickArea.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (touchControls.joystick.active) {
+                    updateJoystick(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: false });
+            
+            joystickArea.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                touchControls.joystick.active = false;
+                touchControls.joystick.x = 0;
+                touchControls.joystick.y = 0;
+                joystick.style.transform = 'translate(0, 0)';
+            }, { passive: false });
+            
+            function updateJoystick(x, y) {
+                const dx = x - touchControls.joystick.startX;
+                const dy = y - touchControls.joystick.startY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const maxDistance = 35;
+                
+                if (distance > maxDistance) {
+                    const angle = Math.atan2(dy, dx);
+                    touchControls.joystick.x = Math.cos(angle) * maxDistance;
+                    touchControls.joystick.y = Math.sin(angle) * maxDistance;
+                } else {
+                    touchControls.joystick.x = dx;
+                    touchControls.joystick.y = dy;
+                }
+                
+                joystick.style.transform = `translate(${touchControls.joystick.x}px, ${touchControls.joystick.y}px)`;
+            }
+            
+            // Controle de mira (área da tela direita)
+            // only handle look when a touch starts on right-half
+            document.addEventListener('touchstart', (e) => {
+                for(let i = 0; i < e.touches.length; i++) {
+                    const touch = e.touches[i];
+                    if(touch.clientX > window.innerWidth / 2) {
+                        touchControls.look.active = true;
+                        touchControls.look.lastX = touch.clientX;
+                        touchControls.look.lastY = touch.clientY;
+                        break;
+                    }
+                }
+            }, { passive: true });
+            
+            document.addEventListener('touchmove', (e) => {
+                if(touchControls.look.active) {
+                    for(let i = 0; i < e.touches.length; i++) {
+                        const touch = e.touches[i];
+                        if(touch.clientX > window.innerWidth / 2) {
+                            const dx = touch.clientX - touchControls.look.lastX;
+                            const dy = touch.clientY - touchControls.look.lastY;
+                            
+                            // Rotacionar câmera
+                            if(localPlayer) {
+                                localPlayer.rotation.y -= dx * CONFIG.MOUSE_SENSITIVITY;
+                                localPlayer.rotation.x -= dy * CONFIG.MOUSE_SENSITIVITY * 0.5;
+                                // clamp vertical to avoid flipping
+                                localPlayer.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, localPlayer.rotation.x));
+                            }
+                            
+                            touchControls.look.lastX = touch.clientX;
+                            touchControls.look.lastY = touch.clientY;
+                            break;
+                        }
+                    }
+                }
+            }, { passive: true });
+            
+            document.addEventListener('touchend', (e) => {
+                // Verificar se algum toque restante está na área de mira
+                let stillTouching = false;
+                for(let i = 0; i < e.touches.length; i++) {
+                    if(e.touches[i].clientX > window.innerWidth / 2) {
+                        stillTouching = true;
+                        touchControls.look.lastX = e.touches[i].clientX;
+                        touchControls.look.lastY = e.touches[i].clientY;
+                        break;
+                    }
+                }
+                touchControls.look.active = stillTouching;
+            }, { passive: true });
+            
+            // Botões de ação
+            const actionButtons = ['btnShoot', 'btnAim', 'btnReload', 'btnJump', 'btnCrouch'];
+            actionButtons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    keys[btnId] = true;
+                    btn.style.transform = 'scale(0.9)';
+                    btn.style.opacity = '0.8';
+                    
+                    // Ação imediata para disparo
+                    if(btnId === 'btnShoot' && gameActive) {
+                        shootWeapon();
+                    }
+                }, { passive: false });
+                
+                btn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    keys[btnId] = false;
+                    btn.style.transform = 'scale(1)';
+                    btn.style.opacity = '1';
+                }, { passive: false });
+            });
+            
+            // IMPORTANT: remove the previous global "touch-to-shoot" on right side because it can double fire.
+            // If you want a tap-to-shoot in right-half, implement it carefully ensuring it doesn't conflict with look/action.
+        }
+        
+        // ==============================
+        // CONEXÃO COM SERVIDOR
+        // ==============================
+        function connectToServer() {
+            showLoading('Conectando ao servidor...');
+            
+            socket = io(CONFIG.SERVER_URL, {
+                transports: ['websocket'],
+                reconnection: true,
+                reconnectionAttempts: 5,
+                timeout: 10000
+            });
+            
+            socket.on('connect', () => {
+                console.log('Conectado ao servidor!');
+                showMessage('Conectado! Procurando partida...', 2000);
+                hideLoading();
+                
+                // Solicitar entrada no matchmaking
+                socket.emit('joinMatchmaking', {
+                    username: 'Player_' + Math.floor(Math.random() * 1000),
+                    rank: 0
+                });
+            });
+            
+            socket.on('matchFound', (matchData) => {
+                console.log('Partida encontrada!', matchData);
+                startGame(matchData);
+            });
+            
+            socket.on('playerUpdate', (players) => {
+                updatePlayers(players);
+            });
+            
+            socket.on('damage', (data) => {
+                takeDamage(data.damage, data.from);
+            });
+            
+            socket.on('roundStart', (data) => {
+                startRound(data);
+            });
+            
+            socket.on('gameState', (state) => {
+                updateGameState(state);
+            });
+            
+            socket.on('disconnect', () => {
+                showMessage('Desconectado do servidor', 3000);
+                gameActive = false;
+            });
+            
+            socket.on('error', (error) => {
+                console.error('Erro no servidor:', error);
+                showMessage('Erro: ' + (error && error.message ? error.message : 'conexão'), 3000);
+            });
+            
+            // disconnect on unload to avoid dangling connections
+            window.addEventListener('beforeunload', () => {
+                if (socket && socket.connected) socket.disconnect();
+            });
+        }
+        
+        // ==============================
+        // INICIAR JOGO
+        // ==============================
+        function startGame(matchData) {
+            gameActive = true;
+            
+            // Esconder menu principal
+            document.getElementById('mainMenu').classList.add('hidden');
+            
+            // Mostrar HUD
+            document.getElementById('hud').style.display = 'block';
+            
+            // Criar jogador local
+            localPlayer = {
+                position: new THREE.Vector3(0, 1.7, 0),
+                rotation: { x: 0, y: 0 },
+                velocity: new THREE.Vector3(0, 0, 0),
+                isGrounded: true,
+                team: matchData.team || 'T',
+                health: 100
+            };
+            
+            // Arma inicial (faca)
+            equipWeapon('knife');
+            
+            // Atualizar HUD
+            updateHUD();
+            
+            // Iniciar rodada
+            startRound({
+                round: 1,
+                time: 115,
+                money: 800
+            });
+            
+            showMessage('Partida iniciada! Boa sorte!', 2000);
+        }
+        
+        // ==============================
+        // SISTEMA DE ARMAS
+        // ==============================
+        function equipWeapon(weaponId) {
+            if(!WEAPONS[weaponId]) return;
+            
+            currentWeapon = {
+                ...WEAPONS[weaponId],
+                ammo: WEAPONS[weaponId].magazine,
+                reserve: WEAPONS[weaponId].reserve,
+                isReloading: false,
+                lastShot: 0
+            };
+            
+            // Atualizar HUD
+            document.getElementById('weaponName').textContent = currentWeapon.name;
+            updateAmmoDisplay();
+            
+            // Enviar para servidor
+            if(socket) {
+                socket.emit('weaponChange', weaponId);
+            }
+        }
+        
+        function shootWeapon() {
+            if(!gameActive || !currentWeapon || currentWeapon.isReloading) return;
+            
+            const now = Date.now();
+            if(now - currentWeapon.lastShot < currentWeapon.fireRate) return;
+            
+            if(currentWeapon.ammo > 0) {
+                // Disparar
+                currentWeapon.ammo--;
+                currentWeapon.lastShot = now;
+                
+                // Atualizar munição na HUD
+                updateAmmoDisplay();
+                
+                // Efeito de tiro
+                createMuzzleFlash();
+                
+                // Enviar para servidor (send plain objects)
+                if(socket) {
+                    socket.emit('shoot', {
+                        weapon: currentWeapon.name,
+                        position: localPlayer.position ? { x: localPlayer.position.x, y: localPlayer.position.y, z: localPlayer.position.z } : null,
+                        rotation: { x: localPlayer.rotation.x, y: localPlayer.rotation.y }
+                    });
+                }
+                
+                // Recoil
+                applyRecoil();
+                
+                // Som (simulado)
+                playSound('shot');
+                
+            } else if(currentWeapon.reserve > 0) {
+                // Recarregar automaticamente
+                reloadWeapon();
+            }
+        }
+        
+        function reloadWeapon() {
+            if(!currentWeapon || currentWeapon.isReloading) return;
+            
+            if(currentWeapon.ammo === currentWeapon.magazine || currentWeapon.reserve === 0) return;
+            
+            currentWeapon.isReloading = true;
+            showMessage('Recarregando...', currentWeapon.reloadTime);
+            
+            setTimeout(() => {
+                const needed = currentWeapon.magazine - currentWeapon.ammo;
+                const available = Math.min(needed, currentWeapon.reserve);
+                
+                currentWeapon.ammo += available;
+                currentWeapon.reserve -= available;
+                currentWeapon.isReloading = false;
+                
+                updateAmmoDisplay();
+                playSound('reload');
+            }, currentWeapon.reloadTime);
+        }
+        
+        function updateAmmoDisplay() {
+            if(currentWeapon) {
+                document.getElementById('ammoCount').textContent = 
+                    `${currentWeapon.ammo}/${currentWeapon.reserve}`;
+            }
+        }
+        
+        function applyRecoil() {
+            if(!localPlayer || !currentWeapon) return;
+            
+            // Recoil simples
+            localPlayer.rotation.x += (Math.random() - 0.5) * 0.02;
+            localPlayer.rotation.y += (Math.random() - 0.5) * 0.01;
+            
+            // clamp vertical rotation
+            localPlayer.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, localPlayer.rotation.x));
+        }
+        
+        function createMuzzleFlash() {
+            const flashLight = new THREE.PointLight(0xff9900, 2, 10);
+            flashLight.position.copy(camera.position);
+            flashLight.position.add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(0.5));
+            scene.add(flashLight);
+            
+            // Remover após curto período
+            setTimeout(() => {
+                scene.remove(flashLight);
+            }, 50);
+        }
+        
+        // ==============================
+        // SISTEMA DE DANO
+        // ==============================
+        function takeDamage(amount, fromPlayer) {
+            playerHealth -= amount;
+            if(playerHealth < 0) playerHealth = 0;
+            
+            updateHUD();
+            
+            // Efeito de dano na tela
+            document.body.style.backgroundColor = 'rgba(255, 0, 0, 0.2)';
+            setTimeout(() => {
+                document.body.style.backgroundColor = '';
+            }, 200);
+            
+            if(playerHealth <= 0) {
+                playerDeath(fromPlayer);
+            }
+        }
+        
+        function playerDeath(killer) {
+            gameActive = false;
+            showMessage(`Você foi morto por ${killer}`, 3000);
+            
+            // Resetar para próxima rodada
+            setTimeout(() => {
+                playerHealth = 100;
+                if(localPlayer && localPlayer.position) localPlayer.position.set(0, 1.7, 0);
+                gameActive = true;
+                updateHUD();
+            }, 3000);
+        }
+        
+        // ==============================
+        // SISTEMA DE RODADAS
+        // ==============================
+        function startRound(roundData) {
+            currentRound = roundData.round || 1;
+            roundTime = roundData.time || 115;
+            playerMoney = roundData.money || 800;
+            
+            // Resetar jogador
+            if(localPlayer) {
+                localPlayer.health = 100;
+                localPlayer.position.set(0, 1.7, 0);
+            }
+            
+            playerHealth = 100;
+            
+            // Atualizar HUD
+            updateHUD();
+            
+            // Iniciar timer
+            if(roundTimer) clearInterval(roundTimer);
+            
+            roundTimer = setInterval(() => {
+                roundTime--;
+                updateRoundTimer();
+                
+                if(roundTime <= 0) {
+                    endRound('time');
+                }
+            }, 1000);
+            
+            showMessage(`Rodada ${currentRound} iniciada!`, 2000);
+        }
+        
+        function endRound(reason) {
+            clearInterval(roundTimer);
+            
+            let winner = 'CT'; // Exemplo
+            let winType = reason;
+            
+            // Lógica de vitória (simplificada)
+            if(reason === 'elimination') {
+                winner = localPlayer.team === 'T' ? 'T' : 'CT';
+            }
+            
+            showMessage(`${winner} venceu a rodada! (${winType})`, 3000);
+            
+            // Próxima rodada após delay
+            setTimeout(() => {
+                if(socket) {
+                    socket.emit('readyForNextRound');
+                }
+            }, 3000);
+        }
+        
+        function updateRoundTimer() {
+            const minutes = Math.floor(roundTime / 60);
+            const seconds = roundTime % 60;
+            document.getElementById('roundTimer').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        // ==============================
+        // LOJA/ECONOMIA
+        // ==============================
+        function showShop() {
+            if(!gameActive) return;
+            
+            const shop = document.getElementById('shopMenu');
+            shop.classList.add('active');
+            
+            // Atualizar dinheiro na loja
+            document.getElementById('shopMoney').textContent = playerMoney;
+            
+            // Popular armas
+            const grid = document.getElementById('weaponGrid');
+            grid.innerHTML = '';
+            
+            Object.entries(WEAPONS).forEach(([id, weapon]) => {
+                if(id === 'knife') return;
+                
+                const canAfford = playerMoney >= weapon.price;
+                
+                const item = document.createElement('div');
+                item.className = 'weapon-item';
+                item.innerHTML = `
+                    <div style="font-size: 24px;">${weapon.icon}</div>
+                    <div style="font-size: 12px; margin: 5px 0;">${weapon.name}</div>
+                    <div style="font-size: 11px; color: ${canAfford ? '#4CAF50' : '#ff5555'}">
+                        $${weapon.price}
+                    </div>
+                `;
+                
+                if(canAfford) {
+                    item.style.cursor = 'pointer';
+                    item.onclick = () => buyWeapon(id, weapon.price);
+                } else {
+                    item.style.opacity = '0.5';
+                }
+                
+                grid.appendChild(item);
+            });
+        }
+        
+        function closeShop() {
+            document.getElementById('shopMenu').classList.remove('active');
+        }
+        
+        function buyWeapon(weaponId, price) {
+            if(playerMoney >= price) {
+                playerMoney -= price;
+                equipWeapon(weaponId);
+                updateHUD();
+                closeShop();
+                showMessage(`${WEAPONS[weaponId].name} comprada!`, 2000);
+                
+                // Enviar para servidor
+                if(socket) {
+                    socket.emit('buyWeapon', { weaponId, price });
+                }
+            }
+        }
+        
+        // ==============================
+        // ATUALIZAÇÃO DO JOGO
+        // ==============================
+        function gameLoop() {
+            requestAnimationFrame(gameLoop);
+            
+            const delta = clock ? clock.getDelta() : (1/60);
+            const frameScale = delta * 60; // scales legacy per-frame movement to per-second
+            
+            if(gameActive && localPlayer) {
+                // MOVIMENTO
+                const moveSpeed = keys['btnCrouch'] ? CONFIG.WALK_SPEED * 0.5 : 
+                                 keys['btnAim'] ? CONFIG.WALK_SPEED * 0.7 : 
+                                 CONFIG.WALK_SPEED;
+                
+                const moveVector = new THREE.Vector3(0, 0, 0);
+                
+                // Controle por joystick
+                if(touchControls.joystick.active) {
+                    moveVector.x = touchControls.joystick.x / 35;
+                    moveVector.z = -touchControls.joystick.y / 35;
+                }
+                
+                // Rotacionar movimento baseado na direção da câmera
+                const angle = localPlayer.rotation.y;
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+                
+                const rotatedX = moveVector.x * cos - moveVector.z * sin;
+                const rotatedZ = moveVector.x * sin + moveVector.z * cos;
+                
+                // Aplicar movimento (frame-independent using frameScale)
+                localPlayer.position.x += rotatedX * moveSpeed * frameScale;
+                localPlayer.position.z += rotatedZ * moveSpeed * frameScale;
+                
+                // Pulo
+                if(keys['btnJump'] && localPlayer.isGrounded) {
+                    localPlayer.velocity.y = 0.15;
+                    localPlayer.isGrounded = false;
+                    keys['btnJump'] = false;
+                }
+                
+                // Gravidade
+                localPlayer.velocity.y -= CONFIG.GRAVITY * frameScale;
+                localPlayer.position.y += localPlayer.velocity.y * frameScale;
+                
+                // Colisão com chão simples
+                if(localPlayer.position.y < 1.7) {
+                    localPlayer.position.y = 1.7;
+                    localPlayer.velocity.y = 0;
+                    localPlayer.isGrounded = true;
+                }
+                
+                // Atualizar câmera
+                camera.position.copy(localPlayer.position);
+                camera.rotation.x = localPlayer.rotation.x;
+                camera.rotation.y = localPlayer.rotation.y;
+                
+                // Enviar atualização para servidor (plain objects)
+                if(socket) {
+                    socket.emit('playerUpdate', {
+                        position: { x: localPlayer.position.x, y: localPlayer.position.y, z: localPlayer.position.z },
+                        rotation: { x: localPlayer.rotation.x, y: localPlayer.rotation.y },
+                        health: playerHealth,
+                        weapon: currentWeapon?.name
+                    });
+                }
+            }
+            
+            // Renderizar
+            if(renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+        
+        // ==============================
+        // FUNÇÕES DE UTILIDADE
+        // ==============================
+        function updateHUD() {
+            document.getElementById('healthValue').textContent = playerHealth;
+            document.getElementById('healthFill').style.width = `${playerHealth}%`;
+            document.getElementById('moneyValue').textContent = playerMoney;
+            updateAmmoDisplay();
+            document.getElementById('roundNumber').textContent = currentRound;
+        }
+        
+        function updatePlayers(playersData) {
+            // Atualizar outros jogadores (simplificado)
+            // Em um jogo completo, você criaria/atualizaria objetos 3D para cada jogador
+        }
+        
+        function updateGameState(state) {
+            // Atualizar estado do jogo
+            if(state.round) {
+                currentRound = state.round;
+                document.getElementById('roundNumber').textContent = currentRound;
+            }
+            
+            if(state.scores) {
+                document.getElementById('scoreT').textContent = state.scores.T || 0;
+                document.getElementById('scoreCT').textContent = state.scores.CT || 0;
+            }
+        }
+        
+        function showMessage(text, duration = 3000) {
+            const msg = document.getElementById('gameMessage');
+            msg.textContent = text;
+            msg.style.display = 'block';
+            
+            setTimeout(() => {
+                msg.style.display = 'none';
+            }, duration);
+        }
+        
+        function showLoading(text) {
+            document.getElementById('loadingScreen').style.display = 'flex';
+            document.getElementById('loadingText').textContent = text;
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingScreen').style.display = 'none';
+        }
+        
+        function playSound(soundName) {
+            // Sistema de áudio simplificado
+            try {
+                const audio = new Audio();
+                // audio.src = `assets/sounds/${soundName}.mp3`;
+                // audio.play();
+            } catch(e) {
+                console.log('Som:', soundName);
+            }
+        }
+        
+        // ==============================
+        // FUNÇÕES DA INTERFACE
+        // ==============================
+        function startMatchmaking() {
+            showLoading('Procurando partida...');
+            
+            // Simulação de matchmaking
+            setTimeout(() => {
+                hideLoading();
+                initGame();
+            }, 2000);
+        }
+        
+        function showSettings() {
+            showMessage('Configurações em desenvolvimento!', 2000);
+        }
+        
+        // ==============================
+        // INICIALIZAÇÃO AO CARREGAR
+        // ==============================
+        window.addEventListener('load', () => {
+            // Atualizar contador de jogadores (simulado)
+            document.getElementById('onlineCount').textContent = 
+                Math.floor(Math.random() * 1000) + 500;
+            
+            // Configurar redimensionamento
+            window.addEventListener('resize', () => {
+                if(camera && renderer) {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, CONFIG.MAX_PIXEL_RATIO));
+                }
+            });
+            
+            // Prevenir comportamento padrão do navegador
+            document.addEventListener('contextmenu', e => e.preventDefault());
+            document.addEventListener('touchmove', e => {
+                if(e.target.classList.contains('action-btn') || 
+                   e.target.id === 'joystickArea') {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        });
+        
+        // ==============================
+        // BACKEND SIMULADO (PARA TESTES)
+        // ==============================
+        // Nota: Para jogar online, você precisa do servidor Node.js no Render.com
+        // Aqui está uma simulação para testes offline:
+        
+        // Descomente para testar offline:
+        /*
+        function simulateServer() {
+            console.log('Usando servidor simulado (offline)');
+            
+            // Simular conexão
+            setTimeout(() => {
+                const mockMatchData = {
+                    team: Math.random() > 0.5 ? 'T' : 'CT',
+                    map: 'de_dust2',
+                    players: 10,
+                    mode: 'competitive'
+                };
+                
+                startGame(mockMatchData);
+            }, 1000);
+        }
+        
+        // Para testar offline, substitua a linha connectToServer(); por simulateServer();
+        */
+    </script>
+</body>
+</html>
